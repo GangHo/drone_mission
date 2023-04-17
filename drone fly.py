@@ -1,5 +1,5 @@
 from __future__ import print_function
-from dronekit import connect, VehicleMode, LocationGlobalRelative
+from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
 import time
 
 import argparse
@@ -10,12 +10,22 @@ parser.add_argument('--connect',
 args = parser.parse_args()
 connection_string = args.connect
 
-# 드론 연결부분
+
 print("\nConnecting to vehicle on: %s" % connection_string)
 vehicle = connect(connection_string, wait_ready=False)
 
-# 드론 기본적인 상태정보출력함수
+# def wildcard_callback(self, attr_name, value):
+#     print (" CALLBACK: (%s): %s" %(attr_name,value))
+#     time.sleep(10)
 
+# print("\nAdd attribute callback detecting any attribute change")
+# vehicle.add_attribute_listener('*',wildcard_callback)
+
+# print("Wait is so callback invoked before observer removed")
+# time.sleep(1)
+
+# print("Remove Vehicle attribute observer")
+# vehicle.remove_attribute_listener('*',wildcard_callback)
 
 def vehicle_state():
 
@@ -23,111 +33,141 @@ def vehicle_state():
     print(" Autopilot Firmware version: %s" % vehicle.version)
 
     print(" Global Location (relative altitude): %s" %
-          vehicle.location.global_relative_frame)  # 상대고도
-    print(" Attitude: %s" % vehicle.attitude)  # YAW ,PITCH, ROLL
-    print(" Velocity: %s" % vehicle.velocity)  # 속도
-    print(" GPS HDOP: %s" % vehicle.gps_0.eph)  # GPS수평위치 오차
-    print(" GPS VDOP: %s" % vehicle.gps_0.epv)  # GSP수직위치 오차
-    print(" GPS fix type: %s" % vehicle.gps_0.fix_type)  # GPS 3이상
+          vehicle.location.global_relative_frame)  
+    print(" Attitude: %s" % vehicle.attitude)  
+    print(" Velocity: %s" % vehicle.velocity)  
+    print(" GPS HDOP: %s" % vehicle.gps_0.eph)  
+    print(" GPS VDOP: %s" % vehicle.gps_0.epv) 
+    print(" GPS fix type: %s" % vehicle.gps_0.fix_type)  
     print(" GPS satellites_visible: %s" %
-          vehicle.gps_0.satellites_visible)  # 연결된 위성 개수
-    print(" Battery: %s" % vehicle.battery)  # 배터리 상황
-    print(" EKF OK?: %s" % vehicle.ekf_ok)  # Extended Kalman Filter 상태
-    print(" Last Heartbeat: %s" % vehicle.last_heartbeat)  # 최근 드론과의 연결 상태(초)
-    print(" Heading: %s" % vehicle.heading)  # 드론의 방향 0' or 360' 지도상 북쪽
-    print(" Is Armable?: %s" % vehicle.is_armable)  # 시동가능여부
-    print(" System status: %s" % vehicle.system_status.state)  # 드론 상태
-  # airspeed에 바람속도 값이 반영된 값 바람을 등지면 속도가 빨라지고 맞바람이면 느려짐
+          vehicle.gps_0.satellites_visible)  
+    print(" Battery: %s" % vehicle.battery) 
+    print(" EKF OK?: %s" % vehicle.ekf_ok)  
+    print(" Last Heartbeat: %s" % vehicle.last_heartbeat)  
+    print(" Heading: %s" % vehicle.heading)  
+    print(" Is Armable?: %s" % vehicle.is_armable)  
+    print(" System status: %s" % vehicle.system_status.state)  
+  
     print(" Groundspeed: %s" % vehicle.groundspeed)
-    print(" Airspeed: %s" % vehicle.airspeed)    # m/s로 일정한 값을 가짐
-    print(" Mode: %s" % vehicle.mode.name)    # 기체의 모드상태
-    print(" Armed: %s" % vehicle.armed)    # 시동이 걸렸는지 현재 시동 상태
+    print(" Airspeed: %s" % vehicle.airspeed)    
+    print(" Mode: %s" % vehicle.mode.name)   
+    print(" Armed: %s" % vehicle.armed)    
 
-# 홈 위치설정 (lat:위도, lon:경도, alt:고도)
+
 
 
 def set_home_location(lat, lon, alt):
     print("\nSet new home location")
-    my_location_alt = LocationGlobal(lat, lon, alt)  # home 위치설정 (고도설정 추후에 다시)
+    my_location_alt = LocationGlobal(lat, lon, alt) 
     vehicle.home_location = my_location_alt
     print(" New Home Location (from attribute - altitude should be 222): %s" %
-          vehicle.home_location)  # 새롭게 설정된 home위치 출력
+          vehicle.home_location)  
 
-# 시동 및 이륙
+
 
 
 def arm_and_takeoff(TargetAlt):
     print("Basic pre-arm checks")
-    # 시동이 걸리지 않을시 대기
+
     while not vehicle.is_armable:
         print(" Waiting for vehicle to initialise...")
         time.sleep(1)
 
     print("Arming motors")
-    vehicle.mode = VehicleMode("GUIDED")  # 비행모드 가이드모드
-    vehicle.armed = True  # 시동 ON
+    vehicle.mode = VehicleMode("GUIDED") 
+    vehicle.armed = True  
 
-    # 이륙전 기체의 시동상태 확인
+  
     while not vehicle.armed:
         print(" Waiting for arming...")
         time.sleep(1)
-    # 이륙
+	vehicle.armed = True  
         print("Taking off!")
-        vehicle.simple_takeoff(TargetAlt)  # 목표고도로 이륙
+        vehicle.simple_takeoff(TargetAlt)  
 
-  # 목표 고도에 도달하는 동안 현재 고도 출력
+
   #
     while True:
-        # 현재 기체의 상대고도
+
         print(" Altitude: ", vehicle.location.global_relative_frame.alt)
-        # 목표 고도에 도달하면 멈춤
+
         if vehicle.location.global_relative_frame.alt >= TargetAlt * 0.95:
             print("Reached target altitude")
             break
         time.sleep(1)
 
 
-def Patrol_Mission():
-    print("Set default/target airspeed to 2")
-    vehicle.airspeed = 2
-    print("Going towards first point for 30 seconds ...")
-    point1 = LocationGlobalRelative(37.340807327195925, 126.73091957660192, 20)
-    vehicle.simple_goto(point1)
+print("\nAdd `attitude` attribute callback/observer on `vehicle`")     
 
-    time.sleep(30)
+#
+#set_home_location(37.3380809527555, 126.735575740178,700)
+#
 
-    print("Going towards second point for 30 seconds ...")
-    point2 = LocationGlobalRelative(37.340577290298455, 126.73129421229582, 20)
-    vehicle.simple_goto(point2, airspeed=2)
+arm_and_takeoff(4)
 
-    time.sleep(30)
+print("Set default/target airspeed to 2")
+vehicle.airspeed = 2
+print("Going towards first point for 30 seconds ...")
+point1 = LocationGlobalRelative(37.338077247868775, 126.73593403945812, 10)
+vehicle.simple_goto(point1,airspeed=3)
 
-    print("Going towards third point for 30 seconds ...")
-    point3 = LocationGlobalRelative(37.340358556544516, 126.73168714352946, 20)
-    vehicle.simple_goto(point3, airspeed=2)
-
-    time.sleep(30)
-
-    print("Returning to Launch")
-
-    vehicle.mode = VehicleMode("RTL")  # 지정홈으로 복귀
-
-    time.sleep(30)
-
-    vehicle.mode = VehicleMode("LAND")
-
-    time.sleep(10)
-
-    vehicle.armed = False
-
-    print("Close vehicle object")
-    vehicle.close()
-
-
-set_home_location(37.34086053950629, 126.73153724175877, 0)
-
+time.sleep(10)
+vehicle_state()
+time.sleep(5)
 vehicle_state()
 
-arm_and_takeoff(10)
+print("Going towards second point for 30 seconds ...")
+point2 = LocationGlobalRelative(37.3379570118895, 126.73555360549537, 10)
+vehicle.simple_goto(point2, airspeed=3)
 
-Patrol_Mission()
+time.sleep(10)
+vehicle_state()
+time.sleep(5)
+
+print("Going towards third point for 30 seconds ...")
+point3 = LocationGlobalRelative(37.338056244024486, 126.73560685946146, 10)
+vehicle.simple_goto(point3, airspeed=3)
+
+time.sleep(7)
+vehicle_state()
+time.sleep(5)
+
+print("RTL")
+vehicle.mode = VehicleMode("RTL") 
+time.sleep(15)
+
+
+
+#print("LAND MODE")
+
+#vehicle.mode = VehicleMode("LAND") 
+
+#time.sleep(7)
+vehicle_state()
+
+
+
+time.sleep(5)
+
+vehicle_state()
+cnt=0
+vehicle.armed = False
+time.sleep(3)
+while vehicle.armed:
+    print("waitting DisArmed")
+    time.sleep(1)
+    cnt+=1
+    if(cnt>10):
+    	print("Faile to DisArmed")
+        break
+
+vehicle.armed = False
+time.sleep(5)
+print("Close vehicle object")
+vehicle.close()
+
+
+#set_home_location(37.34086053950629, 126.73153724175877,-200)
+
+
+
