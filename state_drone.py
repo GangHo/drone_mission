@@ -1,8 +1,24 @@
 from __future__ import print_function
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
 import time
-
 import argparse
+import http.client
+import json
+
+# http setting
+server = "서버이름.com"
+port = 80
+
+conn = http.client.HTTPConnection(server, port)
+conn.request("GET", "/StateInfo")
+response = conn.getresponse()
+data = response.read()
+conn.close()
+
+doc = json.loads(data)
+drone_state = doc["DroneState"]
+
+
 parser = argparse.ArgumentParser(
     description='Print out vehicle state information. Connects to SITL on local PC by default.')
 parser.add_argument('--connect',
@@ -14,7 +30,7 @@ connection_string = args.connect
 print("\nConnecting to vehicle on: %s" % connection_string)
 vehicle = connect(connection_string, wait_ready=False)
 
-# 드론 기본적인 상태정보출력함수
+# 드론 기본적인 상태정보출력함수##########################################################################
 
 
 def vehicle_state():
@@ -53,7 +69,7 @@ def set_home_location(lat, lon, alt):
     print(" New Home Location (from attribute - altitude should be 222): %s" %
           vehicle.home_location)  # 새롭게 설정된 home위치 출력
 
-# 시동 및 이륙
+# 시동 및 이륙########################################################################################3
 
 
 def arm_and_takeoff(TargetAlt):
@@ -86,50 +102,154 @@ def arm_and_takeoff(TargetAlt):
             break
         time.sleep(1)
 
+# 상황 발생시 경고용 드론이 출동할 좌표값 리턴
 
+
+def get_GPS():
+    Warn_GPS = str(vehicle.location.global_relative_frame)
+    # lat 추출
+    lat_str = Warn_GPS.split("lat=")[1].split(",")[0]
+    lat = float(lat_str)
+
+    # lon 추출
+    lon_str = Warn_GPS.split("lon=")[1].split(",")[0]
+    lon = float(lon_str)
+
+    # alt 추출
+    alt_str = Warn_GPS.split("alt=")[1]
+    alt = float(alt_str)
+    return lat, lon, alt
+
+
+# Main코드 #####################################################3
 arm_and_takeoff(10)
 
-print("Set default/target airspeed to 2")
-vehicle.airspeed = 2
-print("Going towards first point for 30 seconds ...")
-point1 = LocationGlobalRelative(37.340807327195925, 126.73091957660192, 10)
-vehicle.simple_goto(point1)
+# 드론 충전소에서 드론의 비행경로의 시작점으로 이동 (빠른속도로)
+print("Going towards Start point for 20 seconds ...")
+point1 = LocationGlobalRelative(
+    37.340807327195925, 126.73091957660192, 10)  # 좌표값 업데이트할것
+vehicle.simple_goto(point1, airspeed=7)
 
-time.sleep(30)
+time.sleep(15)
 
-print("Going towards second point for 30 seconds ...")
+# DroneState=CaptureGo로 상태 업데이트
+conn = http.client.HTTPConnection(server, port)
+conn.request("GET", "/StateInfo/update?DroneState=CaptureGo")
+conn.getresponse()
+conn.close()
+
+while True:
+    conn = http.client.HTTPConnection(server, port)
+    conn.request("GET", "/StateInfo")
+    response = conn.getresponse()
+    data = response.read()
+    conn.close()
+
+    doc = json.load(data)
+    drone_state = doc["DroneState"]
+    if drone_state == "CaptureFinish":
+        break
+    elif drone_state == "Warning":
+        lat, lon, alt = get_GPS()
+        # http.POST?
+    print("Waiting for Capture")
+    time.sleep(0.1)
+
+vehicle_state()
+print(drone_state)
+
+# 라즈베리가 카메라 캡쳐완료한 것을 확인 후 다음 경로로 이동
+print("Going towards second point for 15 seconds ...")
 point2 = LocationGlobalRelative(37.340577290298455, 126.73129421229582, 10)
-# 이렇게 하면  wp1에서wp2까지 약20초 소요 넉넉하게25초 줄것
-vehicle.simple_goto(point2, airspeed=2)
+vehicle.simple_goto(point2, airspeed=5)
 
-time.sleep(30)
+time.sleep(7)
+vehicle_state()
+time.sleep(8)
 
-print("Going towards third point for 30 seconds ...")
+# DroneState=CaptureGo로 상태 업데이트
+conn = http.client.HTTPConnection(server, port)
+conn.request("GET", "/StateInfo/update?DroneState=CaptureGo")
+conn.getresponse()
+conn.close()
+print(drone_state)
+vehicle_state()
+
+while True:
+    conn = http.client.HTTPConnection(server, port)
+    conn.request("GET", "/StateInfo")
+    response = conn.getresponse()
+    data = response.read()
+    conn.close()
+
+    doc = json.load(data)
+    drone_state = doc["DroneState"]
+    if drone_state == "CaptureFinish":
+        break
+    elif drone_state == "Warning":
+        lat, lon, alt = get_GPS()
+        # http.POST?
+    print("Waiting for Capture")
+    time.sleep(0.1)
+
+vehicle_state()
+print(drone_state)
+
+# 라즈베리가 카메라 캡쳐완료한 것을 확인 후 다음 경로로 이동
+
+print("Going towards third point for 15 seconds ...")
 point3 = LocationGlobalRelative(37.340358556544516, 126.73168714352946, 10)
-vehicle.simple_goto(point3, airspeed=2)
+vehicle.simple_goto(point3, airspeed=5)
 
-time.sleep(30)
+time.sleep(7)
+vehicle_state()
+time.sleep(8)
+
+conn = http.client.HTTPConnection(server, port)
+conn.request("GET", "/StateInfo/update?DroneState=CaptureGo")
+conn.getresponse()
+conn.close()
+print(drone_state)
+vehicle_state()
+
+while True:
+    conn = http.client.HTTPConnection(server, port)
+    conn.request("GET", "/StateInfo")
+    response = conn.getresponse()
+    data = response.read()
+    conn.close()
+
+    doc = json.load(data)
+    drone_state = doc["DroneState"]
+    if drone_state == "CaptureFinish":
+        break
+    print("Waiting for Capture")
+    time.sleep(0.1)
+
+vehicle_state()
+print(drone_state)
+
 
 print("Returning to Launch")
 
 vehicle.mode = VehicleMode("RTL")  # 지정홈으로 복귀
 
-time.sleep(30)
+conn = http.client.HTTPConnection(server, port)
+conn.request("GET", "/StateInfo/update?DroneState=GoHome")
+conn.getresponse()
+conn.close()
+print(drone_state)
+vehicle_state()
 
-vehicle.mode = VehicleMode("LAND")
+time.sleep(40)
 
-time.sleep(10)
 
 vehicle.armed = False
 time.sleep(5)
+
 while vehicle.armed:
     print(" Waiting for disarmed...")
     time.sleep(1)
 
 print("Close vehicle object")
 vehicle.close()
-
-
-# set_home_location(37.34086053950629, 126.73153724175877, 0)
-
-vehicle_state()
