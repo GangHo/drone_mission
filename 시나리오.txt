@@ -1,0 +1,27 @@
+드론이륙> 목표 고도 도달> 일단 드론의 첫번째 비행경로가 될곳으로 이동> /StateInfo/update?DroneState=CaptureGo  상태 업데이트
+> 라즈베리파이가 사진찍음 > 드론은 상태를 계속 조회하다가 라즈베리가 상태를 go로 바꾸면 확인후 > 다음 목적지로 비행 >
+
+> /StateInfo/update?DroneState=CaptureGo  상태 업데이트
+반복하다가 마지막 목적지에 도착하면 /StateInfo/update?DroneState=GoHome으로 변경 
+>GoHome 확인하면 드론을 RTL하던가 or 홈좌표로 그냥 가던가 
+
+만약 장애물 발견시 라즈베리에서 EX)Discovery로 State를 바꾸면 정찰드론이 gps값 http로 보내줌> 가능할듯
+정찰드론은 conn.request("GET", "/PatientInfo/102") 이걸로 받는다??
+
+장애물 발견 State를 언제 넣어야하지??
+
+
+경고용 드론은 항상 스테이트를 보고있다가  >만약 발견하면 라즈베리가 /StateInfo/update?DroneState=Warning업데이트하면  
+>시동을 걸고 여기서 목적지 코드에는 conn.request("GET", "/PatientInfo/102")이거로 가져와서 좌표에 넣는식으로 해야할듯?
+>만약 거리에 도달했다면 /StateInfo/update?DroneState=WarningStart로 변경 > 경광등 ON
+
+
+*로이터모드 =  호버링모드
+*가이드모드 = 자율주행모드
+
+
+목표 좌표값:37.338077247868775, 126.73593403945812,10
+
+터미널 좌표값:37.3380768, 126.7359363, 10
+
+.4f까지는 유효하다?
