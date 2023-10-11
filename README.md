@@ -1,26 +1,9 @@
-﻿# drone_mission
-Battery:voltage=12.399,current=0.09,level=96
+캡스톤디자인과 ICT해상물류에서 사용한 드론제어 코드입니다. 
 
+DroneKit-Python라이브러리를 사용하여 드론의 포인트비행을 코드로 구현하였으며,
 
-while True:
-    lat, lon, alt = get_GPS()
-    if ((lat - 0.00002) <= lat <= (lat + 0.00002)) & ((lon - 0.00002) <= lon <= (lon + 0.00002)) & ((alt - 0.05) <= alt <= (alt + 0.05)):
-        break
-        
-        
-        
-        
-def get_GPS():
-    Warn_GPS = str(vehicle.location.global_relative_frame)
-    # lat 추출
-    lat_str = Warn_GPS.split("lat=")[1].split(",")[0]
-    lat = float(lat_str)
+HTTP통신을 이용하여 웹서버와 통신하여 순찰드론, 라즈베리파이, 경고드론의 State를 변경 및 읽어와 드론을 제어합니다.
 
-    # lon 추출
-    lon_str = Warn_GPS.split("lon=")[1].split(",")[0]
-    lon = float(lon_str)
+시연영상:https://www.youtube.com/watch?v=1nd7-OUGe1g
 
-    # alt 추출
-    alt_str = Warn_GPS.split("alt=")[1]
-    alt = float(alt_str)
-    return lat, lon, alt
+![image](https://github.com/GangHo/drone_mission/assets/123044407/c57a14f2-21ae-40fc-a22c-16b0581aa19a)
